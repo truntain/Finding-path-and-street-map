@@ -8,10 +8,8 @@ from Algo import (
     A_star,
     DFS_search,
     Greedy_best_first_search,
-    Dijkstra
-    # Đảm bảo rằng shortest_path.py cũng có các hàm phụ trợ như
-    # h1, reconstruct_path_nodes, Create_path_coord, calculate_actual_path_length
-    # và các hàm thuật toán đã được cập nhật để trả về 4 giá trị.
+    Dijkstra,
+    Bidirectional_A_star
 )
 
 app = Flask(__name__)
@@ -61,7 +59,8 @@ algorithm_list = {
     'Dijkstra': Dijkstra,
     'A Star': A_star,
     'DFS': DFS_search,
-    'BFS': Greedy_best_first_search,
+    'Greedy BFS': Greedy_best_first_search,
+    'Bidirectional A Star': Bidirectional_A_star,
 }
 
 @app.route('/find_shortest_path', methods=['POST'])

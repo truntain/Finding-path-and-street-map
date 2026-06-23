@@ -1,23 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <title>Map</title>
     <link rel="stylesheet" href="/static/leaflet.css" />
     <script src="/static/leaflet.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
     <style>
-        html, body {
+        html,
+        body {
             height: 100%;
             margin: 0;
         }
+
         #map {
             height: 100%;
             width: 100%;
         }
+
         .controls-container {
             position: absolute;
             top: 10px;
@@ -27,39 +32,49 @@
             background-color: rgba(255, 255, 255, 0.8);
             padding: 10px;
             border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            max-width: 250px; /* Giới hạn chiều rộng */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            max-width: 250px;
+            /* Giới hạn chiều rộng */
         }
+
         .control-item {
             margin-bottom: 10px;
         }
+
         .control-item label,
         .control-item button,
         .control-item select {
             display: block;
             margin-bottom: 5px;
         }
+
         #pathInfo {
             margin-top: 15px;
             padding-top: 10px;
             border-top: 1px solid #ccc;
         }
+
         #pathInfo p {
             margin: 5px 0;
             font-size: 0.9em;
         }
+
         #pathInfo span {
             font-weight: bold;
         }
-         /* THAY ĐỔI 3: Style cho các control geocoder để chúng không quá rộng */
+
+        /* THAY ĐỔI 3: Style cho các control geocoder để chúng không quá rộng */
         .leaflet-control-geocoder-form input {
-            width: 200px; /* Điều chỉnh chiều rộng nếu cần */
+            width: 200px;
+            /* Điều chỉnh chiều rộng nếu cần */
         }
+
         .leaflet-control-geocoder {
             /* Style cho container của geocoder nếu cần */
         }
     </style>
 </head>
+
 <body>
     <div id="map"></div>
 
@@ -78,8 +93,9 @@
             <select id="algorithmSelect">
                 <option value="Dijkstra">Dijkstra</option>
                 <option value="A Star" selected>A Star</option>
+                <option value="Bidirectional A Star">Bidirectional A*</option>
                 <option value="DFS">DFS</option>
-                <option value="BFS">BFS</option>
+                <option value="Greedy BFS">Greedy BFS</option>
             </select>
         </div>
 
@@ -92,7 +108,8 @@
         </div>
     </div>
 
-    <script src="/static/leaflet.js"></script> <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <script src="/static/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
     <script>
         var map = L.map('map').setView([21.017, 105.840], 14); // Giữ nguyên hoặc điều chỉnh view
@@ -126,21 +143,21 @@
 
         // Vẽ nodes và paths ban đầu (giữ nguyên)
         if (nodesData && nodesData.length > 0) {
-            nodesData.forEach(function(coord) {
+            nodesData.forEach(function (coord) {
                 L.circleMarker(coord, { radius: 3, color: 'black', fillColor: '#333', fillOpacity: 0.5 }).addTo(nodeMarkersLayer);
             });
         }
         if (pathsData && pathsData.length > 0) {
-            pathsData.forEach(function(path) {
+            pathsData.forEach(function (path) {
                 L.polyline(path, { color: 'gray', weight: 2 }).addTo(pathLinesLayer);
             });
         }
 
 
-        document.getElementById('toggleNodes').addEventListener('click', function() {
+        document.getElementById('toggleNodes').addEventListener('click', function () {
             if (map.hasLayer(nodeMarkersLayer)) map.removeLayer(nodeMarkersLayer); else map.addLayer(nodeMarkersLayer);
         });
-        document.getElementById('togglePaths').addEventListener('click', function() {
+        document.getElementById('togglePaths').addEventListener('click', function () {
             if (map.hasLayer(pathLinesLayer)) map.removeLayer(pathLinesLayer); else map.addLayer(pathLinesLayer);
         });
 
@@ -179,7 +196,7 @@
             document.getElementById('info-distance').textContent = 'Đang tìm...';
             document.getElementById('info-nodes-expanded').textContent = 'Đang tìm...';
             document.getElementById('info-execution-time').textContent = 'Đang tìm...';
-            
+
             $.ajax({ // Giữ nguyên ajax call của bạn
                 url: "/find_shortest_path",
                 type: "POST",
@@ -189,32 +206,32 @@
                     end: endCoords,
                     algorithm: algorithm,
                 }),
-                success: function(response) {
+                success: function (response) {
                     var pathSegments = response.path_coords;
                     var mainPathLatLngs = [];
                     if (pathSegments && pathSegments.length > 0) {
                         mainPathLatLngs.push(pathSegments[0][0]); // Điểm đầu của segment đầu tiên
-                        pathSegments.forEach(function(segment) {
+                        pathSegments.forEach(function (segment) {
                             mainPathLatLngs.push(segment[1]); // Chỉ lấy điểm cuối của mỗi segment
                         });
-                        currentPathLayer = L.polyline(mainPathLatLngs, {color: '#007bff', weight: 4}).addTo(map);
+                        currentPathLayer = L.polyline(mainPathLatLngs, { color: '#007bff', weight: 4 }).addTo(map);
                         map.fitBounds(currentPathLayer.getBounds().pad(0.1));
                     }
 
 
                     if (response.start_path_segment) {
-                         startLineLayer = L.polyline(response.start_path_segment, {color: 'blue', weight: 2, dashArray: '5, 5'}).addTo(map);
+                        startLineLayer = L.polyline(response.start_path_segment, { color: 'blue', weight: 2, dashArray: '5, 5' }).addTo(map);
                     }
                     if (response.end_path_segment) {
-                         endLineLayer = L.polyline(response.end_path_segment, {color: '#FF0000', weight: 2, dashArray: '5, 5'}).addTo(map);
+                        endLineLayer = L.polyline(response.end_path_segment, { color: '#FF0000', weight: 2, dashArray: '5, 5' }).addTo(map);
                     }
-                    
+
                     document.getElementById('info-algorithm').textContent = algorithm;
                     document.getElementById('info-distance').textContent = response.total_distance || 'N/A';
                     document.getElementById('info-nodes-expanded').textContent = response.nodes_expanded !== undefined ? response.nodes_expanded : 'N/A';
                     document.getElementById('info-execution-time').textContent = response.execution_time !== undefined ? response.execution_time.toFixed(6) : 'N/A';
                 },
-                error: function(jqXHR, textStatus, errorThrown) { // Giữ nguyên error handling
+                error: function (jqXHR, textStatus, errorThrown) { // Giữ nguyên error handling
                     console.error("Lỗi AJAX:", textStatus, errorThrown, jqXHR.responseText);
                     var errorMsg = "Lỗi tìm đường.";
                     if (jqXHR.responseJSON && jqXHR.responseJSON.error) {
@@ -235,7 +252,7 @@
             placeholder: 'Nhập địa chỉ điểm bắt đầu...',
             defaultMarkGeocode: false, // Tắt tự động đặt marker của plugin
             position: 'topleft' // Đặt vị trí cho thanh search này
-        }).on('markgeocode', function(e) {
+        }).on('markgeocode', function (e) {
             var latlng = e.geocode.center;
             var name = e.geocode.name;
             storedStartCoords = [latlng.lat, latlng.lng];
@@ -243,7 +260,7 @@
             if (startMarker) map.removeLayer(startMarker); // Xóa marker cũ
             startMarker = L.marker(latlng, { icon: blueIcon })
                 .addTo(map)
-                .bindPopup("Start: " + name.split(',').slice(0,2).join(',')) // Tên rút gọn
+                .bindPopup("Start: " + name.split(',').slice(0, 2).join(',')) // Tên rút gọn
                 .openPopup();
             map.panTo(latlng);
             clickCounter = 1; // Đã có điểm bắt đầu
@@ -259,7 +276,7 @@
             placeholder: 'Nhập địa chỉ điểm kết thúc...',
             defaultMarkGeocode: false,
             position: 'topleft' // Đặt vị trí cho thanh search này
-        }).on('markgeocode', function(e) {
+        }).on('markgeocode', function (e) {
             var latlng = e.geocode.center;
             var name = e.geocode.name;
             storedEndCoords = [latlng.lat, latlng.lng];
@@ -267,7 +284,7 @@
             if (endMarker) map.removeLayer(endMarker); // Xóa marker cũ
             endMarker = L.marker(latlng, { icon: redIcon })
                 .addTo(map)
-                .bindPopup("End: " + name.split(',').slice(0,2).join(',')) // Tên rút gọn
+                .bindPopup("End: " + name.split(',').slice(0, 2).join(',')) // Tên rút gọn
                 .openPopup();
             map.panTo(latlng);
             clickCounter = (storedStartCoords) ? 2 : 0; // Nếu đã có start thì là 2, nếu không thì reset
@@ -281,11 +298,11 @@
 
         // THAY ĐỔI 8: Cập nhật logic click trên bản đồ để tương tác với geocoders
         var clickCounter = 0;
-        map.on('click', function(e) {
+        map.on('click', function (e) {
             var lat = e.latlng.lat;
             var lng = e.latlng.lng;
 
-            if (clickCounter === 0 || (startMarker && endMarker) ) { // Nếu chưa có điểm nào, hoặc đã có cả 2 (click để reset và chọn start mới)
+            if (clickCounter === 0 || (startMarker && endMarker)) { // Nếu chưa có điểm nào, hoặc đã có cả 2 (click để reset và chọn start mới)
                 clearMapLayers();
                 document.getElementById('pathInfo').style.display = 'none';
                 // Làm trống ô search nếu click để reset
@@ -296,13 +313,13 @@
 
 
                 storedStartCoords = [lat, lng];
-                startMarker = L.marker([lat, lng], {icon: blueIcon}).addTo(map).bindPopup("Start Point").openPopup();
+                startMarker = L.marker([lat, lng], { icon: blueIcon }).addTo(map).bindPopup("Start Point").openPopup();
                 storedEndCoords = null; // Quan trọng: reset điểm cuối
                 clickCounter = 1;
             } else if (clickCounter === 1) { // Đã có điểm bắt đầu, đây là điểm kết thúc
                 storedEndCoords = [lat, lng];
                 if (endMarker) map.removeLayer(endMarker); // Xóa endMarker cũ nếu có từ search
-                endMarker = L.marker([lat, lng], {icon: redIcon}).addTo(map).bindPopup("End Point").openPopup();
+                endMarker = L.marker([lat, lng], { icon: redIcon }).addTo(map).bindPopup("End Point").openPopup();
                 clickCounter = 2;
 
                 var selectedAlgorithm = document.getElementById('algorithmSelect').value;
@@ -311,7 +328,7 @@
         });
 
         // THAY ĐỔI 9: Cập nhật hàm Reset Points
-        document.getElementById('resetPoints').addEventListener('click', function() {
+        document.getElementById('resetPoints').addEventListener('click', function () {
             clearMapLayers();
             document.getElementById('pathInfo').style.display = 'none';
             storedStartCoords = null;
@@ -326,7 +343,7 @@
         });
 
         // Sự kiện thay đổi thuật toán (giữ nguyên)
-        document.getElementById('algorithmSelect').addEventListener('change', function(e) {
+        document.getElementById('algorithmSelect').addEventListener('change', function (e) {
             var selectedAlgorithm = e.target.value;
             if (storedStartCoords && storedEndCoords) {
                 findPath(storedStartCoords, storedEndCoords, selectedAlgorithm);
@@ -335,4 +352,5 @@
 
     </script>
 </body>
+
 </html>

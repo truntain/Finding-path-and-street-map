@@ -5,14 +5,18 @@ from math import radians, cos, sqrt
 import time
 
 
-try:
-    maps_data = ox.load_graphml('noithanh_HaNoi.graphml')
-except FileNotFoundError:
-    print("Lỗi: Không tìm thấy file noithanh_HaNoi.graphml. Hãy đảm bảo file tồn tại.")
-    maps_data = None
-except Exception as e:
-    print(f"Lỗi khi tải maps_data: {e}")
-    maps_data = None
+maps_data = None
+
+def get_maps_data():
+    global maps_data
+    if maps_data is None:
+        try:
+            maps_data = ox.load_graphml('noithanh_HaNoi.graphml')
+        except FileNotFoundError:
+            print("Lỗi: Không tìm thấy file noithanh_HaNoi.graphml. Hãy đảm bảo file tồn tại.")
+        except Exception as e:
+            print(f"Lỗi khi tải maps_data: {e}")
+    return maps_data
 
 def Create_path_coord(path_nodes, current_maps_data):
     if not current_maps_data or not path_nodes or len(path_nodes) < 2:
@@ -119,7 +123,9 @@ def path_to_edges(path_nodes):
 
 # --- CÁC HÀM THUẬT TOÁN ĐÃ SỬA ---
 
-def A_star(graph_simple, start, goal, current_maps_data=maps_data):
+def A_star(graph_simple, start, goal, current_maps_data=None):
+    if current_maps_data is None:
+        current_maps_data = get_maps_data()
     if not current_maps_data or start not in graph_simple or goal not in graph_simple:
         return None, 0, 0.0, 0.0
 
@@ -173,7 +179,9 @@ def A_star(graph_simple, start, goal, current_maps_data=maps_data):
     execution_time = time.perf_counter() - start_time
     return None, nodes_expanded, execution_time, 0.0
 
-def Greedy_best_first_search(graph_simple, start, goal, current_maps_data=maps_data):
+def Greedy_best_first_search(graph_simple, start, goal, current_maps_data=None):
+    if current_maps_data is None:
+        current_maps_data = get_maps_data()
     if not current_maps_data or start not in graph_simple or goal not in graph_simple:
         return None, 0, 0.0, 0.0 # Thêm total_distance_val = 0.0
 
@@ -215,7 +223,9 @@ def Greedy_best_first_search(graph_simple, start, goal, current_maps_data=maps_d
     execution_time = time.perf_counter() - start_time
     return None, nodes_expanded, execution_time, 0.0
 
-def UCS(graph_simple, start, goal, current_maps_data=maps_data):
+def UCS(graph_simple, start, goal, current_maps_data=None):
+    if current_maps_data is None:
+        current_maps_data = get_maps_data()
     if not current_maps_data or start not in graph_simple or goal not in graph_simple:
         return None, 0, 0.0, 0.0
 
@@ -266,16 +276,20 @@ def UCS(graph_simple, start, goal, current_maps_data=maps_data):
     execution_time = time.perf_counter() - start_time
     return None, nodes_expanded, execution_time, 0.0
 
-def Dijkstra(graph_simple, start, goal, current_maps_data=maps_data):
+def Dijkstra(graph_simple, start, goal, current_maps_data=None):
+    if current_maps_data is None:
+        current_maps_data = get_maps_data()
     if not current_maps_data or start not in graph_simple or goal not in graph_simple:
         return None, 0, 0.0, 0.0
     return UCS(graph_simple, start, goal, current_maps_data)
-def DFS_search(graph_simple, start, goal, current_maps_data=maps_data):
+def DFS_search(graph_simple, start, goal, current_maps_data=None):
     """
     Tìm đường đi từ start đến goal bằng thuật toán DFS.
     Không đảm bảo đường đi ngắn nhất.
     Trả về: (path_coordinates, nodes_expanded, execution_time, total_distance_val)
     """
+    if current_maps_data is None:
+        current_maps_data = get_maps_data()
     if not current_maps_data or start not in graph_simple or goal not in graph_simple:
         return None, 0, 0.0, 0.0
 
@@ -331,3 +345,145 @@ def DFS_search(graph_simple, start, goal, current_maps_data=maps_data):
     # Không tìm thấy đường đi
     execution_time = time.perf_counter() - start_time
     return None, nodes_expanded, execution_time, 0.0
+
+
+def Create_reverse_Graph(graph_simple):
+    # Tạo danh sách kề đảo chiều: u -> v chuyển thành v -> u
+    graph_reverse = {node: [] for node in graph_simple}
+    for u in graph_simple:
+        for v, length in graph_simple[u]:
+            if v in graph_reverse:
+                graph_reverse[v].append([u, length])
+    return graph_reverse
+
+
+def Bidirectional_A_star(graph_simple, start, goal, current_maps_data=None):
+    if current_maps_data is None:
+        current_maps_data = get_maps_data()
+    if not current_maps_data or start not in graph_simple or goal not in graph_simple:
+        return None, 0, 0.0, 0.0
+
+    start_time = time.perf_counter()
+    nodes_expanded = 0
+
+    # Khởi tạo đồ thị đảo chiều cho hướng đi ngược
+    graph_reverse = Create_reverse_Graph(graph_simple)
+
+    # Khởi tạo hàng đợi và biến số cho cả 2 phía
+    open_start = []
+    open_goal = []
+
+    # Priority Queue elements: (f_score, node)
+    heapq.heappush(open_start, (h1(start, goal, current_maps_data), start))
+    heapq.heappush(open_goal, (h1(goal, start, current_maps_data), goal))
+
+    came_from_start = {}
+    came_from_goal = {}
+
+    g_start = {node: float('inf') for node in graph_simple}
+    g_start[start] = 0
+    g_goal = {node: float('inf') for node in graph_simple}
+    g_goal[goal] = 0
+
+    f_start = {node: float('inf') for node in graph_simple}
+    f_start[start] = h1(start, goal, current_maps_data)
+    f_goal = {node: float('inf') for node in graph_simple}
+    f_goal[goal] = h1(goal, start, current_maps_data)
+
+    closed_start = set()
+    closed_goal = set()
+
+    best_path_cost = float('inf')
+    best_node = None
+
+    while open_start and open_goal:
+        # Điều kiện dừng sớm: nếu chi phí tốt nhất nhỏ hơn tổng f_min của hai đầu
+        min_f_start = open_start[0][0]
+        min_f_goal = open_goal[0][0]
+        if best_path_cost <= min_f_start + min_f_goal:
+            break
+
+        # Chọn mở rộng bên nào có số lượng nút chờ duyệt ít hơn để cân bằng
+        if len(open_start) <= len(open_goal):
+            # Mở rộng phía start (đi xuôi)
+            current_f_val, current_node = heapq.heappop(open_start)
+            if current_node in closed_start:
+                continue
+            closed_start.add(current_node)
+            nodes_expanded += 1
+
+            if current_node in closed_goal:
+                path_cost = g_start[current_node] + g_goal[current_node]
+                if path_cost < best_path_cost:
+                    best_path_cost = path_cost
+                    best_node = current_node
+
+            for neighbor_data in graph_simple.get(current_node, []):
+                neighbor_node = neighbor_data[0]
+                cost = neighbor_data[1]
+                if neighbor_node in closed_start:
+                    continue
+
+                tentative_g = g_start[current_node] + cost
+                if tentative_g < g_start[neighbor_node]:
+                    came_from_start[neighbor_node] = current_node
+                    g_start[neighbor_node] = tentative_g
+                    f_start[neighbor_node] = tentative_g + h1(neighbor_node, goal, current_maps_data)
+                    heapq.heappush(open_start, (f_start[neighbor_node], neighbor_node))
+
+                    # Cập nhật best_path_cost nếu neighbor đã được duyệt từ phía goal
+                    if neighbor_node in g_goal and g_goal[neighbor_node] != float('inf'):
+                        path_cost = tentative_g + g_goal[neighbor_node]
+                        if path_cost < best_path_cost:
+                            best_path_cost = path_cost
+                            best_node = neighbor_node
+        else:
+            # Mở rộng phía goal (đi ngược)
+            current_f_val, current_node = heapq.heappop(open_goal)
+            if current_node in closed_goal:
+                continue
+            closed_goal.add(current_node)
+            nodes_expanded += 1
+
+            if current_node in closed_start:
+                path_cost = g_start[current_node] + g_goal[current_node]
+                if path_cost < best_path_cost:
+                    best_path_cost = path_cost
+                    best_node = current_node
+
+            for neighbor_data in graph_reverse.get(current_node, []):
+                neighbor_node = neighbor_data[0]
+                cost = neighbor_data[1]
+                if neighbor_node in closed_goal:
+                    continue
+
+                tentative_g = g_goal[current_node] + cost
+                if tentative_g < g_goal[neighbor_node]:
+                    came_from_goal[neighbor_node] = current_node
+                    g_goal[neighbor_node] = tentative_g
+                    f_goal[neighbor_node] = tentative_g + h1(neighbor_node, start, current_maps_data)
+                    heapq.heappush(open_goal, (f_goal[neighbor_node], neighbor_node))
+
+                    # Cập nhật best_path_cost nếu neighbor đã được duyệt từ phía start
+                    if neighbor_node in g_start and g_start[neighbor_node] != float('inf'):
+                        path_cost = tentative_g + g_start[neighbor_node]
+                        if path_cost < best_path_cost:
+                            best_path_cost = path_cost
+                            best_node = neighbor_node
+
+    execution_time = time.perf_counter() - start_time
+    if best_node is None or best_path_cost == float('inf'):
+        return None, nodes_expanded, execution_time, 0.0
+
+    # Tái tạo đường đi đầy đủ
+    forward_path = reconstruct_path_nodes(came_from_start, best_node)
+    backward_path = reconstruct_path_nodes(came_from_goal, best_node)
+
+    # Kết hợp hai chặng đường
+    backward_path_reversed = backward_path[::-1]
+    full_path_nodes = forward_path[:-1] + backward_path_reversed
+
+    path_coordinates = Create_path_coord(full_path_nodes, current_maps_data)
+    total_distance_val = calculate_actual_path_length(full_path_nodes, graph_simple)
+
+    return path_coordinates, nodes_expanded, execution_time, total_distance_val
